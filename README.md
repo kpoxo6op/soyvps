@@ -10,7 +10,7 @@ A project to manage VPS for Wireguard access to home Kubernetes cluster via Terr
   - [Environment Variables](#environment-variables)
 - [State Management](#state-management)
   - [Setting Up Remote State](#setting-up-remote-state)
-  - [Access Methods](#access-methods)
+  - [RBAC Access Setup](#rbac-access-setup)
   - [Verifying State](#verifying-state)
 
 ## Prerequisites
@@ -34,31 +34,29 @@ az login --use-device-code
 
 ### Service Principal Setup
 
-Create a service principal for Terraform to use:
+Create a service principal for Terraform:
 
 ```bash
 # Create service principal with Contributor role
 az ad sp create-for-rbac --name "SoyVPS-Terraform" --role Contributor --scope /subscriptions/$(az account show --query id -o tsv)
 
-# Output will include:
-# {
-#   "appId": "your-client-id",
-#   "displayName": "SoyVPS-Terraform",
-#   "password": "your-client-secret",
-#   "tenant": "your-tenant-id"
-# }
+# Note the output values:
+# - appId (ARM_CLIENT_ID)
+# - password (ARM_CLIENT_SECRET)
+# - tenant (ARM_TENANT_ID)
+# - subscription ID (ARM_SUBSCRIPTION_ID)
 ```
 
 ### Environment Variables
 
-Create a `.env` file with your credentials (add to .gitignore):
+Create a `.env` file with credentials (add to .gitignore):
 
 ```bash
 # Terraform Azure authentication variables
-export ARM_CLIENT_ID=your-client-id
-export ARM_CLIENT_SECRET=your-client-secret
-export ARM_SUBSCRIPTION_ID=your-subscription-id
-export ARM_TENANT_ID=your-tenant-id
+export ARM_CLIENT_ID=client-id-value
+export ARM_CLIENT_SECRET=client-secret-value
+export ARM_SUBSCRIPTION_ID=subscription-id-value
+export ARM_TENANT_ID=tenant-id-value
 ```
 
 ## State Management
@@ -97,31 +95,12 @@ terraform {
 EOF
 ```
 
-### Access Methods
+### RBAC Access Setup
 
-You can access Azure Storage using either storage account keys or RBAC:
-
-#### Storage Account Key (Traditional)
+Set up RBAC for Azure Storage access:
 
 ```bash
-# Get storage account key
-ACCOUNT_KEY=$(az storage account keys list --resource-group tfstate-rg --account-name soyvpstfstate --query '[0].value' -o tsv)
-
-# Add to environment variables
-export ARM_ACCESS_KEY=$ACCOUNT_KEY
-
-# Access storage via key
-az storage blob list \
-  --container-name tfstate \
-  --account-name soyvpstfstate \
-  --account-key $ACCOUNT_KEY \
-  --query "[].name"
-```
-
-#### RBAC (Modern Approach)
-
-```bash
-# Get your user ID
+# Get user ID
 USER_ID=$(az ad signed-in-user show --query id -o tsv)
 
 # Assign Storage Blob Data Contributor role
@@ -130,34 +109,29 @@ az role assignment create \
   --assignee $USER_ID \
   --scope "/subscriptions/$ARM_SUBSCRIPTION_ID/resourceGroups/tfstate-rg/providers/Microsoft.Storage/storageAccounts/soyvpstfstate"
 
-# Access storage via RBAC (after role propagation)
-az storage blob list \
-  --container-name tfstate \
-  --account-name soyvpstfstate \
-  --auth-mode login \
-  --query "[].name"
+# Wait 5-10 minutes for role propagation
 ```
 
 ### Verifying State
 
-To verify Terraform state migration:
+Verify Terraform state migration:
 
 ```bash
-# Initialize with backend (use either ARM_ACCESS_KEY or RBAC)
+# Initialize with backend 
 source .env
 terraform init -migrate-state
 
 # List resources in state
 terraform state list
 
-# Using Azure CLI with RBAC
+# Verify blob using Azure CLI with RBAC
 az storage blob list \
   --container-name tfstate \
   --account-name soyvpstfstate \
   --auth-mode login \
   --query "[].name"
 
-# Download state file
+# Download state file for inspection
 az storage blob download \
   --container-name tfstate \
   --name terraform.tfstate \
