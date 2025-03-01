@@ -1,0 +1,51 @@
+---
+description: Changelog Generation Instructions
+globs: 
+alwaysApply: false
+---
+# Changelog Generation Instructions
+
+Please analyze our conversation and previous requests and additional comments
+which i will provide in current message and prompts and generate a concise,
+product-focused changelog entry that:
+
+1. Summarizes the main functional changes
+2. Highlights any new features or improvements
+3. Uses bullet points for multiple changes
+4. Keeps technical details minimal unless they impact users
+6. The amount of change log records can vary from 1 to any amount you find
+   rielevant, please dont inflate the amount of records for no reason. For
+   example, if you make only one change, dont make up 10 records, do only one.
+7. Ignore all changes from previous changelog entries and previous commits  
+8. Follows the format:
+
+type(scope): description
+
+Types:
+- feat: New feature
+- fix: Bug fix
+- improve: Improvements to existing functionality
+- docs: Documentation changes
+- refactor: Code changes that neither fix bugs nor add features
+
+Example format: feat(auth): Add social login with Google
+- Implemented Google OAuth integration
+- Added user profile sync
+- Simplified login process
+
+Please provide the result as git commands and save it as bash script commit.sh:
+
+git add . git commit -m "<changelog entry here>" git push origin main
+
+Note: The commit message should be clear, concise and describe the changes in a
+way that makes sense for other team members and future reference.
+
+Important : please dont change this file, treat it as a commands for the work
+you should do. Output a command to be run in the commit.sh file.
+
+Output command to run commit.sh file
+
+```shell
+chmod +x commit.sh
+./commit.sh
+```
