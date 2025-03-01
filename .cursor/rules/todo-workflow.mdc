@@ -1,0 +1,61 @@
+---
+description: TODO.md Workflow Process
+globs: 
+alwaysApply: true
+---
+ # TODO.md Workflow Process
+
+## Task Workflow Rules
+
+1. **One Task at a Time**
+   - Focus on implementing a single task from TODO.md
+   - Do not start multiple tasks simultaneously
+
+2. **Verification First Approach**
+   - Before implementing any task, create a separate verification MD file
+   - Consider whether automated testing is appropriate or human verification is sufficient
+   - Document all verification steps clearly in the MD file
+   - Include command-line examples for verifying the implementation
+
+3. **User Approval Required**
+   - WAIT for user to review and approve verification steps
+   - DO NOT proceed with implementation until user explicitly approves
+   - Address any user concerns about verification approach
+
+4. **Implementation with Pending Status**
+   - After implementing the task, mark it with [?] in TODO.md to indicate "pending verification"
+   - Example:
+     ```
+     - [?] Define Azure network infrastructure in Terraform (VNet, Subnet, NSG)
+       > Creates isolated network environment for WireGuard server
+     ```
+   - NEVER mark a task as completed [x] without user verification
+
+5. **User Verification Required**
+   - After implementation, guide the user through the verification steps
+   - Wait for user to test and confirm the implementation works as expected
+
+6. **Completion Confirmation**
+   - Ask the user explicitly if the task can be marked as completed
+   - Only mark the task as [x] when the user confirms they are satisfied
+   - Update the TODO.md file accordingly
+
+## Example Process
+
+```
+Task: Define Azure network infrastructure
+↓
+Create verification-network-infra.md with verification steps
+↓
+Wait for user approval of verification approach
+↓
+Implement infrastructure code
+↓
+Mark task as [?] in TODO.md (pending verification)
+↓
+Guide user through verification steps
+↓
+Ask user if task can be marked complete
+↓
+Mark task as [x] in TODO.md when user approves
+```

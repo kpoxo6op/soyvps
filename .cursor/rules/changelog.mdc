@@ -1,7 +1,7 @@
 ---
 description: Changelog Generation Instructions
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Changelog Generation Instructions
 

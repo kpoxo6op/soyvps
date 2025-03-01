@@ -1,7 +1,7 @@
 ---
 description: This repo is to manage VPS for wireguard access to home k8s cluster via terraform in Azure New Zealand North region
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 
 # About
