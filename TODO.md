@@ -11,7 +11,7 @@
 - [x] Define Azure network infrastructure in Terraform (VNet, Subnet, NSG)
   > Creates isolated network environment for WireGuard server
 
-- [?] Create Ubuntu VM in Azure New Zealand North with Terraform
+- [x] Create Ubuntu VM in Azure New Zealand North with Terraform
   > Provides stable, public-facing endpoint with static IP
 
 ## WireGuard Server Configuration

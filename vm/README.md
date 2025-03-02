@@ -76,3 +76,25 @@ The VM is provisioned with cloud-init that performs:
 - SSH hardening:
   - Root login disabled
   - Password authentication disabled
+
+## Verification
+
+The VM deployment can be verified by SSHing into the created server:
+
+```bash
+# Get the public IP address
+PUBLIC_IP=$(terraform output -raw vm_public_ip)
+
+# SSH into the VM using the azureuser and your private key
+ssh azureuser@$PUBLIC_IP
+
+# Expected output: Successful login to Ubuntu server
+# Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.8.0-1021-azure x86_64)
+```
+
+Alternatively, use the pre-formatted SSH command from the outputs:
+
+```bash
+# Get the SSH command with the correct username and IP
+$(terraform output -raw ssh_command)
+```
