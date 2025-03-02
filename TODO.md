@@ -22,14 +22,17 @@
 - [x] Generate WireGuard server keys
   > Creates cryptographic identity for the WireGuard server
 
-- [ ] Configure WireGuard server interface and firewall rules
+- [x] Configure WireGuard server interface and firewall rules
   > Establishes VPN endpoint with proper network access
+
+- [x] Configure WireGuard to start automatically
+  > Ensures VPN server runs persistently, including after reboots
+
+- [ ] Create most basic setup to verify access
+  > Adds minimal client configuration to test VPN connectivity works
 
 - [ ] Create peer configuration for home Kubernetes node
   > Enables home cluster to connect to VPS as a WireGuard client
-
-- [ ] Configure WireGuard to start automatically
-  > Ensures VPN server runs persistently, including after reboots
 
 ## Routing & Connectivity
 
