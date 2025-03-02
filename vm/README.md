@@ -78,6 +78,15 @@ graph TD
 - **Firewall**: Configured with UFW to allow WireGuard and SSH traffic
 - **Routing**: PostUp/PostDown rules for proper traffic routing
 
+## WireGuard Key Relationship
+
+WireGuard uses public-key cryptography where:
+
+- Server and client keys are NOT derived from each other - each generates their own independent key pair
+- Authentication happens by exchanging public keys (server knows client's public key, client knows server's public key)
+- Each side uses their private key + the other's public key to create an encrypted tunnel
+- No password exchange occurs - the mathematical relationship between public-private keys enables secure communication
+
 ## Design Considerations
 
 - **VM Size**: Standard_B1s balances cost and performance for WireGuard workloads
