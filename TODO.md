@@ -39,25 +39,17 @@
 - [ ] Configure iptables for proper NAT and forwarding
   > Enables traffic to move between internet and VPN tunnel
 
-- [ ] Add monitoring for WireGuard connection status
-  > Provides visibility into VPN connectivity state
 
-## Testing & Validation
+## GitHub Actions Pipeline
 
-- [ ] Test WireGuard connections from allowed peers
-  > Verifies VPN tunnel works as expected
+- [ ] Set up GitHub repository secrets for Azure credentials
+  > Securely stores service principal details for automation
 
-- [ ] Validate end-to-end connectivity
-  > Ensures traffic flows correctly between endpoints
+- [ ] Create simple GitHub Actions workflow for Terraform operations
+  > Automates infrastructure deployment from repository
 
-## Documentation
+- [ ] Configure workflow dispatch inputs for operation selection
+  > Allows choosing between plan-only or plan-and-apply operations
 
-- [ ] Document VPS networking configuration
-  > Records design decisions and network layout for future reference
-
-- [ ] Document WireGuard server setup and maintenance
-  > Provides operational instructions for ongoing management
-
-- [ ] Create troubleshooting guide
-  > Helps diagnose and fix potential connectivity issues
-  
+- [ ] Add Terraform plan and apply steps to workflow
+  > Enables viewing changes before applying them
