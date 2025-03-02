@@ -97,28 +97,7 @@ This document outlines the verification steps for ensuring WireGuard server keys
 3. Ensure your Terraform code deploys these keys to the VPS:
 
    ```terraform
-   # Example snippet in main.tf on HOME PC
-   resource "null_resource" "wireguard_keys" {
-     # This runs after VM creation
-     depends_on = [azurerm_linux_virtual_machine.wireguard_vm]
-     
-     connection {
-       type        = "ssh"
-       host        = azurerm_linux_virtual_machine.wireguard_vm.public_ip_address
-       user        = "adminuser"
-       private_key = file("~/.ssh/id_rsa")
-     }
-
-     provisioner "remote-exec" {
-       inline = [
-         "sudo mkdir -p /etc/wireguard",
-         "echo '${var.wg_server_private_key}' | sudo tee /etc/wireguard/server_private.key > /dev/null",
-         "echo '${var.wg_server_public_key}' | sudo tee /etc/wireguard/server_public.key > /dev/null",
-         "sudo chmod 600 /etc/wireguard/server_private.key",
-         "sudo chmod 644 /etc/wireguard/server_public.key",
-       ]
-     }
-   }
+   here must be cloud init echoes with mostly masked keys
    ```
 
 ### PHASE 3: VERIFICATION ON VPS (Run on your VPS after deployment)
