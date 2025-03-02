@@ -59,44 +59,81 @@ resource "azurerm_linux_virtual_machine" "wireguard_vm" {
     type = "SystemAssigned"
   }
   
-  # This cloud-init script prepares the VM for WireGuard by installing pinned
-  # package versions for stability, enabling IP forwarding required for VPN 
-  # traffic routing, and applying basic security hardening to reduce the 
-  # attack surface of the public-facing VPS
+  # This cloud-init script configures the WireGuard VPN server with proper security measures.
+  # It implements:
+  # - System package installation and security hardening
+  # - WireGuard interface configuration with private network (10.8.0.0/24)
+  # - Secure key management with appropriate permissions
+  # - IP forwarding for VPN traffic routing
+  # - Firewall rules to allow VPN traffic and protect the server
+  # - Automatic service activation for persistent operation
   custom_data = base64encode(<<-EOF
-    #!/bin/bash
-    apt-get update
-    apt-get upgrade -y
-    apt-get install -y curl wget htop net-tools
-    
-    apt-get install -y wireguard=1.0.20210914-1ubuntu2 wireguard-tools=1.0.20210914-1ubuntu2
-    
-    echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-    sysctl -p
-    
-    groupadd -f wireguard
-    usermod -aG wireguard ${var.admin_username}
-    
-    mkdir -p /etc/wireguard
-    chgrp wireguard /etc/wireguard
-    chmod 750 /etc/wireguard
-    
-    hostnamectl set-hostname wireguard-vps
-    
-    echo "127.0.0.1 wireguard-vps" >> /etc/hosts
-    
-    echo "${var.wg_server_private_key}" > /etc/wireguard/server_private.key
-    chmod 600 /etc/wireguard/server_private.key
-    
-    echo "${var.wg_server_public_key}" > /etc/wireguard/server_public.key
-    chgrp wireguard /etc/wireguard/server_public.key
-    chmod 644 /etc/wireguard/server_public.key
-    
-    sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-    systemctl restart sshd
-  EOF
+#!/bin/bash
+
+# SYSTEM PREPARATION
+apt-get update
+apt-get upgrade -y
+apt-get install -y curl wget htop net-tools
+
+apt-get install -y wireguard wireguard-tools
+
+# SYSTEM SECURITY CONFIGURATION
+hostnamectl set-hostname wireguard-vps
+echo "127.0.0.1 wireguard-vps" >> /etc/hosts
+
+sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+systemctl restart sshd
+
+# WIREGUARD GROUP SETUP
+groupadd -f wireguard
+usermod -aG wireguard ${var.admin_username}
+
+mkdir -p /etc/wireguard
+chgrp wireguard /etc/wireguard
+chmod 750 /etc/wireguard
+
+# WIREGUARD KEYS SETUP
+echo "${var.wg_server_private_key}" > /etc/wireguard/server_private.key
+chmod 600 /etc/wireguard/server_private.key
+
+echo "${var.wg_server_public_key}" > /etc/wireguard/server_public.key
+chgrp wireguard /etc/wireguard/server_public.key
+chmod 644 /etc/wireguard/server_public.key
+
+# WIREGUARD INTERFACE CONFIGURATION
+cat > /etc/wireguard/wg0.conf << WGEOF
+[Interface]
+PrivateKey = ${var.wg_server_private_key}
+Address = 10.8.0.1/24
+ListenPort = 51820
+
+PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+WGEOF
+
+chmod 600 /etc/wireguard/wg0.conf
+
+# IP FORWARDING CONFIGURATION
+echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-wireguard.conf
+sysctl -p /etc/sysctl.d/99-wireguard.conf
+
+# FIREWALL CONFIGURATION
+apt-get install -y ufw
+
+ufw default deny incoming
+ufw default allow outgoing
+
+ufw allow 22/tcp
+ufw allow 51820/udp
+
+ufw --force enable
+
+# ENABLE WIREGUARD SERVICE
+systemctl enable wg-quick@wg0
+systemctl start wg-quick@wg0
+EOF
   )
   
   tags = var.tags
-} 
+}
