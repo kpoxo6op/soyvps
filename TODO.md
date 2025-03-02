@@ -8,7 +8,7 @@
 - [x] Set up Terraform remote state in Azure Storage
   > Allows team collaboration and consistent state management
 
-- [?] Define Azure network infrastructure in Terraform (VNet, Subnet, NSG)
+- [x] Define Azure network infrastructure in Terraform (VNet, Subnet, NSG)
   > Creates isolated network environment for WireGuard server
 
 - [ ] Create Ubuntu VM in Azure New Zealand North with Terraform
