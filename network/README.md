@@ -1,8 +1,8 @@
-# Network Infrastructure
+# Network Module
 
-This directory contains Terraform configuration for the Azure network infrastructure needed for the WireGuard VPS.
+Azure network infrastructure for WireGuard VPN server access.
 
-## Architecture Overview
+## Architecture
 
 ```mermaid
 graph TD
@@ -13,7 +13,7 @@ graph TD
     NSG --> SSH[Security Rule<br>AllowSSH<br>TCP 22]
 ```
 
-## Infrastructure Components
+## Components
 
 - **Resource Group**: `soyvps-rg` in New Zealand North region
 - **Virtual Network**: `soyvps-vnet` with address space 10.0.0.0/16
@@ -22,27 +22,23 @@ graph TD
   - Allow WireGuard UDP traffic on port 51820 (priority 1000)
   - Allow SSH TCP traffic on port 22 (priority 1001)
 
-## Purpose
+## Functionality
 
-The network infrastructure provides an isolated and secure environment for the WireGuard VPN server with:
+Isolated and secure network environment for the WireGuard VPN server with:
 
-- A dedicated virtual network (VNet) with private address space
-- A subnet for the WireGuard server
-- Network security groups (NSGs) that only allow necessary traffic:
-  - WireGuard UDP traffic (port 51820)
-  - SSH access for administration
+- Dedicated virtual network with private address space
+- Subnet with NSG attachment
+- Limited inbound traffic rules for WireGuard and SSH only
+- Configurable through module variables
 
-## Design Decisions
+## Design Considerations
 
-1. **Regional Selection**: New Zealand North region was chosen for optimal latency to the home Kubernetes cluster.
+- **Region**: New Zealand North for optimal latency to home network
+- **Network Topology**: Isolated VNet with dedicated subnet for the VPN server
+- **Security**: Minimal attack surface with only required ports open
+- **Configuration**: Parameterized with defaults that can be overridden
 
-2. **Network Isolation**: Using a dedicated VNet (10.0.0.0/16) and subnet (10.0.1.0/24) provides network isolation and room for future expansion.
-
-3. **Security First**: NSG rules follow the principle of least privilege, only allowing WireGuard and SSH traffic.
-
-4. **Variable-Driven Configuration**: All network settings are parameterized with sensible defaults that can be overridden if needed.
-
-## Network Flow Overview
+## Network Traffic Flow
 
 ```mermaid
 flowchart LR
@@ -60,14 +56,25 @@ flowchart LR
         NSG{{Network Security Group}}
     end
     
-    Client -- 1. SSH TCP/22 --> NSG
-    Client -- 2. WireGuard UDP/51820 --> NSG
+    Client -- SSH TCP/22 --> NSG
+    Client -- WireGuard UDP/51820 --> NSG
     NSG -- Allowed Traffic --> VM
     
     classDef azure fill:#0072C6,color:white
     class Azure,soyvps-vnet,wireguard-subnet,VM azure
 ```
 
-## Next Steps
+## Module Usage
 
-Once the network infrastructure is in place, the next step is to create the Ubuntu VM that will host the WireGuard server. 
+```hcl
+module "network" {
+  source = "./network"
+  
+  # Optional: Override default variables
+  # location = "australiaeast"
+  # resource_group_name = "custom-rg"
+  # vnet_address_space = ["10.1.0.0/16"]
+  # subnet_address_prefix = ["10.1.1.0/24"]
+  # wireguard_port = 51820
+}
+```

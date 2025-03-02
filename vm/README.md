@@ -1,8 +1,8 @@
-# Virtual Machine Infrastructure
+# VM Module
 
-This directory contains Terraform configuration for the Ubuntu VM that will host the WireGuard VPN server.
+Ubuntu virtual machine for hosting WireGuard VPN server in Azure.
 
-## Architecture Overview
+## Architecture
 
 ```mermaid
 graph TD
@@ -16,34 +16,35 @@ graph TD
     class PIP,NIC,VM,SUBNET azure
 ```
 
-## Infrastructure Components
+## Components
 
-- **Public IP Address**: Static IP to ensure it doesn't change on VM restart
-- **Network Interface**: Connected to the WireGuard subnet
-- **Ubuntu VM**: 
+- **Public IP Address**: Static IP for consistent external access
+- **Network Interface**: Connected to the specified subnet
+- **Ubuntu VM**:
   - Size: Standard_B1s (1 vCPU, 1 GB memory)
-  - OS: Ubuntu 22.04 LTS (Jammy Jellyfish)
-  - Authentication: SSH key-based (no password)
-  - Managed Identity: System-assigned for Azure resource access
+  - OS: Ubuntu 22.04 LTS
+  - Authentication: SSH key-based only
+  - Identity: System-assigned managed identity
 
-## Design Decisions
+## Design Considerations
 
-1. **VM Size Selection**: Standard_B1s is cost-effective yet sufficient for WireGuard which has minimal resource requirements.
+- **VM Size**: Standard_B1s balances cost and performance for WireGuard workloads
+- **OS**: Ubuntu 22.04 LTS provides kernel-level WireGuard support
+- **Security**:
+  - SSH key authentication with no password access
+  - System hardened via cloud-init script
+  - Static IP for consistent firewall rules
+- **Identity**: Managed identity enables secure Azure resource access
 
-2. **OS Choice**: Ubuntu 22.04 LTS provides long-term support and stability with modern kernel features required for WireGuard.
+## Configuration
 
-3. **Security Considerations**:
-   - SSH key authentication only (no password)
-   - System hardening via cloud-init
-   - Static public IP for consistent firewall rules
+### Required Variables
 
-4. **Managed Identity**: The VM has a system-assigned managed identity to facilitate secure access to other Azure resources without storing credentials.
+- `subnet_id`: ID of the subnet where the VM will be deployed
+- `ssh_public_key`: SSH public key for VM access authentication
 
-## SSH Key Configuration
+### Usage Example
 
-The VM module requires an SSH public key for secure authentication. You must provide the key content directly through the `ssh_public_key` variable.
-
-Example usage in main.tf:
 ```hcl
 module "vm" {
   source = "./vm"
@@ -51,29 +52,27 @@ module "vm" {
   subnet_id = module.network.wireguard_subnet_id
   ssh_public_key = "ssh-rsa AAAA...your-key...example"
   
-  # Other optional parameters
+  # Optional parameters
   # resource_group_name = "custom-rg"
-  # location = "eastus"
+  # location = "australiaeast"
   # vm_size = "Standard_B2s"
 }
 ```
 
-You can also use an environment variable:
+### Environment Variable
+
+SSH public key can be provided via environment variable:
+
 ```bash
 export TF_VAR_ssh_public_key="ssh-rsa AAAA...your-key...example"
-terraform apply
 ```
 
-A template file `.env.ssh.sample` is provided at the root of the repository to help with this configuration.
+## Initial Configuration
 
-## Initial VM Setup
+The VM is provisioned with cloud-init that performs:
 
-The VM is provisioned with a cloud-init script that:
-- Updates the system and installs basic utilities
-- Sets the proper hostname
-- Disables root login via SSH
-- Disables password authentication
-
-## Next Steps
-
-Once the VM is created, the next step is to install and configure WireGuard. 
+- System updates and utility installation
+- Hostname configuration
+- SSH hardening:
+  - Root login disabled
+  - Password authentication disabled
