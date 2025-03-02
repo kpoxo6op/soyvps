@@ -1,3 +1,5 @@
+# ./main.tf - Root Terraform configuration for WireGuard VPS
+
 terraform {
   required_providers {
     azurerm = {
@@ -11,7 +13,6 @@ provider "azurerm" {
   features {}
 }
 
-# Simple resource group to test authentication
 resource "azurerm_resource_group" "test" {
   name     = "soyvps-test-rg"
   location = "australiaeast"
@@ -22,7 +23,6 @@ resource "azurerm_resource_group" "test" {
   }
 } 
 
-# WireGuard VPS Network Infrastructure
 module "network" {
   source = "./network"
   
@@ -34,7 +34,6 @@ module "network" {
   # wireguard_port = 51820
 }
 
-# WireGuard VPS Virtual Machine
 module "vm" {
   source = "./vm"
   
@@ -53,7 +52,6 @@ module "vm" {
   depends_on = [module.network]
 }
 
-# Export network outputs
 output "resource_group_name" {
   value = module.network.resource_group_name
   description = "The name of the resource group for WireGuard VPS"
@@ -64,7 +62,6 @@ output "wireguard_subnet_id" {
   description = "The ID of the subnet where the WireGuard VM will be deployed"
 }
 
-# Export VM outputs
 output "vm_public_ip" {
   value = module.vm.public_ip_address
   description = "The public IP address of the WireGuard VM"

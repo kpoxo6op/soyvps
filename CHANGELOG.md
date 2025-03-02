@@ -34,3 +34,11 @@ All notable changes to this project will be documented in this file.
   - Removed invalid references in output files
   - Validated successful VM creation with Terraform plan
   - Added support for direct SSH public key injection
+
+### Improved
+
+- style: Remove all redundant comments across the codebase
+  - Eliminated "AI slop" comments that merely restate resource types
+  - Retained only meaningful comments that explain WHY choices were made
+  - Added proper file path comments at the top of each file
+  - Established clear code commenting rules in documentation

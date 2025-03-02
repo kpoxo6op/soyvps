@@ -1,12 +1,13 @@
 #!/bin/bash
 
 git add .
-git commit -m "feat(vm): Complete VM creation and verification
+git commit -m "style: remove all redundant comments across the codebase
 
-- Successfully created Ubuntu VM in Azure New Zealand North
-- Verified SSH access to the VM with public key authentication
-- Marked VM creation task as complete in TODO.md
-- Added verification section to VM README with SSH instructions
-- VM is running Ubuntu 22.04.5 LTS with system-assigned managed identity
-- Public static IP is allocated and accessible"
+- Removed all redundant comments that merely state what resources do
+- Eliminated comments like 'Enable system-assigned managed identity' that add no value
+- Removed module description comments and output section comments from main.tf
+- Cleaned up resource description comments from Terraform resource blocks
+- Kept only meaningful comments that explain WHY certain choices were made
+- Kept cloud-init section comments as they explain configuration intent
+- Adhered strictly to the 'no AI slop' project rule"
 git push origin main 

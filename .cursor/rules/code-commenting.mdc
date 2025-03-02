@@ -1,0 +1,69 @@
+---
+description: Code Commenting Practices
+globs: 
+alwaysApply: true
+---
+ This rule provides guidelines for how code should be commented (or not commented) in this project.
+
+## Core Principles
+
+1. **Minimal Comments**: Code should be self-explanatory through clear naming and structure.
+   - Well-written code generally doesn't require extensive comments
+   - Focus on writing readable code first, not on explaining poor code with comments
+
+2. **No Inline Comments**: Never add comments on the same line as code.
+   ```yaml
+   # INCORRECT:
+   priorityClass:
+     create: true
+     name: longhorn-critical
+     value: 2000001001 # Sets priority above system-node-critical
+
+   # CORRECT:
+   # Sets priority above system-node-critical
+   priorityClass:
+     create: true
+     name: longhorn-critical
+     value: 2000001001
+   ```
+
+3. **Block Comments Only**: If absolutely necessary, use a single block comment at the top of a code section.
+   ```terraform
+   # These resources create a network security group with required rules
+   # for WireGuard VPN and SSH access while maintaining a minimal attack surface.
+   # Non-standard port 51820 is used for WireGuard to avoid common port scanners.
+   resource "azurerm_network_security_group" "wireguard_nsg" {
+     name                = "wireguard-nsg"
+     location            = var.location
+     resource_group_name = var.resource_group_name
+   }
+   ```
+
+4. **Path Comments**: Always add the relative path as a top comment to each file.
+   ```hcl
+   # ./network/main.tf
+   
+   resource "azurerm_resource_group" "soyvps_rg" {
+     name     = var.resource_group_name
+     location = var.location
+     tags     = var.tags
+   }
+   ```
+
+## When To Comment
+
+Comments should be used sparingly and only in these cases:
+
+1. To explain **why** something is done a particular way (not what it does)
+2. To document non-obvious technical decisions or constraints
+3. To explain workarounds or "hacks" and why they were necessary
+4. When explicitly requested to document a specific section of code
+
+## When NOT To Comment
+
+1. Don't comment obvious code functionality
+2. Don't comment what variables or functions are named after
+3. Don't use comments to explain overly complex code (refactor instead)
+4. Don't add redundant comments that repeat what the code already clearly expresses
+
+Remember: In this project, clear code with minimal, strategic comments is preferred over heavily commented code.

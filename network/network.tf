@@ -1,6 +1,5 @@
 # ./network/network.tf - Azure network infrastructure for WireGuard VPS
 
-# Resource group for production resources
 resource "azurerm_resource_group" "soyvps_rg" {
   name     = var.resource_group_name
   location = var.location
@@ -8,7 +7,6 @@ resource "azurerm_resource_group" "soyvps_rg" {
   tags = var.tags
 }
 
-# Virtual Network
 resource "azurerm_virtual_network" "soyvps_vnet" {
   name                = var.vnet_name
   resource_group_name = azurerm_resource_group.soyvps_rg.name
@@ -18,7 +16,6 @@ resource "azurerm_virtual_network" "soyvps_vnet" {
   tags = var.tags
 }
 
-# Subnet for WireGuard server
 resource "azurerm_subnet" "wireguard_subnet" {
   name                 = var.subnet_name
   resource_group_name  = azurerm_resource_group.soyvps_rg.name
@@ -26,7 +23,6 @@ resource "azurerm_subnet" "wireguard_subnet" {
   address_prefixes     = var.subnet_address_prefix
 }
 
-# Network Security Group
 resource "azurerm_network_security_group" "wireguard_nsg" {
   name                = var.nsg_name
   location            = azurerm_resource_group.soyvps_rg.location
@@ -35,7 +31,6 @@ resource "azurerm_network_security_group" "wireguard_nsg" {
   tags = var.tags
 }
 
-# NSG Rule for WireGuard
 resource "azurerm_network_security_rule" "allow_wireguard" {
   name                        = "AllowWireGuard"
   priority                    = 1000
@@ -50,7 +45,6 @@ resource "azurerm_network_security_rule" "allow_wireguard" {
   network_security_group_name = azurerm_network_security_group.wireguard_nsg.name
 }
 
-# NSG Rule for SSH access
 resource "azurerm_network_security_rule" "allow_ssh" {
   name                        = "AllowSSH"
   priority                    = 1001
@@ -65,7 +59,6 @@ resource "azurerm_network_security_rule" "allow_ssh" {
   network_security_group_name = azurerm_network_security_group.wireguard_nsg.name
 }
 
-# Associate NSG with Subnet
 resource "azurerm_subnet_network_security_group_association" "wireguard_subnet_nsg_assoc" {
   subnet_id                 = azurerm_subnet.wireguard_subnet.id
   network_security_group_id = azurerm_network_security_group.wireguard_nsg.id
