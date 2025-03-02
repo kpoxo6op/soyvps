@@ -74,12 +74,23 @@ resource "azurerm_linux_virtual_machine" "wireguard_vm" {
     echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
     sysctl -p
     
+    groupadd -f wireguard
+    usermod -aG wireguard ${var.admin_username}
+    
     mkdir -p /etc/wireguard
-    chmod 700 /etc/wireguard
+    chgrp wireguard /etc/wireguard
+    chmod 750 /etc/wireguard
     
     hostnamectl set-hostname wireguard-vps
     
     echo "127.0.0.1 wireguard-vps" >> /etc/hosts
+    
+    echo "${var.wg_server_private_key}" > /etc/wireguard/server_private.key
+    chmod 600 /etc/wireguard/server_private.key
+    
+    echo "${var.wg_server_public_key}" > /etc/wireguard/server_public.key
+    chgrp wireguard /etc/wireguard/server_public.key
+    chmod 644 /etc/wireguard/server_public.key
     
     sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config

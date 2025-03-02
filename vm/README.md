@@ -1,6 +1,128 @@
-# VM Module
+# VM Module for WireGuard Server
 
-Ubuntu virtual machine for hosting WireGuard VPN server in Azure.
+This module provisions an Azure VM configured for WireGuard VPN server.
+
+## WireGuard Keys Management
+
+WireGuard keys are generated locally and passed to Terraform through environment variables for security. This approach:
+
+1. Keeps keys out of version control
+2. Maintains consistent server identity across rebuilds
+3. Secures sensitive cryptographic material
+
+### Setup Instructions
+
+1. Generate WireGuard keys locally:
+
+```bash
+# Install WireGuard tools if needed
+sudo apt-get update
+sudo apt-get install wireguard-tools
+
+# Generate private key
+wg genkey > wireguard_server_private.key
+
+# Generate public key from private key
+wg pubkey < wireguard_server_private.key > wireguard_server_public.key
+```
+
+2. Store keys in a local `.env` file at the repository root:
+
+```bash
+# Create or overwrite .env file with the correct TF_VAR_ prefix
+echo "TF_VAR_wg_server_private_key=$(cat wireguard_server_private.key)" > .env
+echo "TF_VAR_wg_server_public_key=$(cat wireguard_server_public.key)" >> .env
+```
+
+3. Secure the original key files:
+
+```bash
+shred -u wireguard_server_private.key
+shred -u wireguard_server_public.key
+```
+
+4. Add `.env` to `.gitignore`:
+
+```bash
+echo ".env" >> .gitignore
+```
+
+5. Before running Terraform, load the environment variables:
+
+```bash
+# Load environment variables into current shell session
+source .env
+
+# Verify variables are loaded correctly
+env | grep TF_VAR_wg
+
+# Now run Terraform commands
+terraform plan
+terraform apply
+```
+
+> **Important Note**: Terraform automatically maps environment variables with the `TF_VAR_` prefix to 
+> corresponding variables in your Terraform configuration. For example, `TF_VAR_wg_server_private_key` 
+> will be used for the Terraform variable `wg_server_private_key`.
+
+### Key Verification
+
+After deployment, verify keys were correctly deployed:
+
+```bash
+# SSH to the VPS
+ssh azureuser@<vps-ip-address>
+
+# Verify the azureuser is in the wireguard group
+groups
+
+# Verify key files exist with correct permissions
+ls -la /etc/wireguard/
+
+# Expected permissions:
+# drwxr-x--- for /etc/wireguard/ directory (750)
+# -rw------- for server_private.key (600)
+# -rw-r--r-- for server_public.key (644)
+# Directory and public key should be owned by group 'wireguard'
+
+# Verify public key is readable without sudo
+cat /etc/wireguard/server_public.key
+
+# Private key should still require sudo
+sudo cat /etc/wireguard/server_private.key
+
+# Verify key validity
+sudo wg pubkey < /etc/wireguard/server_private.key | diff - /etc/wireguard/server_public.key
+```
+
+## Usage in Terraform Root Module
+
+```terraform
+module "wireguard_vm" {
+  source = "./vm"
+  
+  # ... other variables ...
+  
+  # WireGuard keys from environment variables
+  wg_server_private_key = var.wg_server_private_key
+  wg_server_public_key  = var.wg_server_public_key
+}
+```
+
+Add these variables to your root `variables.tf`:
+
+```terraform
+variable "wg_server_private_key" {
+  description = "WireGuard server private key"
+  type        = string
+  sensitive   = true
+}
+
+variable "wg_server_public_key" {
+  description = "WireGuard server public key"
+  type        = string
+}
+```
 
 ## Architecture
 

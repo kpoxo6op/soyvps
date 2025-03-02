@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- feat(wireguard): Implement secure WireGuard key management
+  - Created dedicated wireguard system group for controlled access
+  - Implemented proper directory and file permissions structure
+  - Added automatic key deployment with secure access controls
+  - Configured terraform variables with environment variables integration
+  - Documented complete key generation and verification process
+  - Ensured azureuser can read public key without sudo access
+
 - feat(setup): Initial project setup for Azure VPS with Wireguard
   - Created comprehensive README with installation instructions
   - Added Azure CLI installation and authentication steps
