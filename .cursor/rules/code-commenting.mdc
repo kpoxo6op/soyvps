@@ -1,9 +1,36 @@
 ---
-description: Code Commenting Practices
+description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
- This rule provides guidelines for how code should be commented (or not commented) in this project.
+# Code Commenting Practices
+
+This rule provides guidelines for how code should be commented (or not commented) in this project.
+
+## CRITICAL RULE: NO REDUNDANT RESOURCE-TYPE COMMENTS
+
+**NEVER add comments that simply state the resource type.** This is considered redundant and unhelpful.
+
+```terraform
+# INCORRECT - REDUNDANT COMMENT:
+# Virtual Network
+resource "azurerm_virtual_network" "soyvps_vnet" {
+  name                = var.vnet_name
+  resource_group_name = azurerm_resource_group.soyvps_rg.name
+  location            = azurerm_resource_group.soyvps_rg.location
+  address_space       = var.vnet_address_space
+  tags                = var.tags
+}
+
+# CORRECT - NO REDUNDANT COMMENT:
+resource "azurerm_virtual_network" "soyvps_vnet" {
+  name                = var.vnet_name
+  resource_group_name = azurerm_resource_group.soyvps_rg.name
+  location            = azurerm_resource_group.soyvps_rg.location
+  address_space       = var.vnet_address_space
+  tags                = var.tags
+}
+```
 
 ## Core Principles
 
@@ -65,5 +92,6 @@ Comments should be used sparingly and only in these cases:
 2. Don't comment what variables or functions are named after
 3. Don't use comments to explain overly complex code (refactor instead)
 4. Don't add redundant comments that repeat what the code already clearly expresses
+5. **NEVER add comments that simply restate the resource type** - this is considered "AI slop"
 
-Remember: In this project, clear code with minimal, strategic comments is preferred over heavily commented code.
+Remember: In this project, clear code with minimal, strategic comments is preferred over heavily commented code. 

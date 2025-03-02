@@ -13,16 +13,6 @@ provider "azurerm" {
   features {}
 }
 
-resource "azurerm_resource_group" "test" {
-  name     = "soyvps-test-rg"
-  location = "australiaeast"
-  
-  tags = {
-    environment = "test"
-    purpose     = "authentication-test"
-  }
-} 
-
 module "network" {
   source = "./network"
   
