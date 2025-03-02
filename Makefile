@@ -20,7 +20,7 @@ help:
 	@echo "  ssh        - SSH to the Azure VM as azure user"
 	@echo "  ssh-clean  - Remove old SSH host keys and SSH to the Azure VM"
 	@echo "  apply      - Run terraform init and apply with auto-approval"
-
+	@echo "  plan       - Run terraform plan"
 ssh:
 	@echo "Finding VM IP address..."
 	@IP=$$(terraform output -raw vm_public_ip 2>/dev/null) && \
@@ -45,8 +45,10 @@ ssh-clean:
 		ssh azureuser@$$IP; \
 	fi
 
-apply:
-	@echo "Initializing Terraform..."
+plan:
 	terraform init
-	@echo "Applying Terraform configuration..."
+	terraform plan
+
+apply:
+	terraform init
 	terraform apply -auto-approve 
