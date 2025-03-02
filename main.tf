@@ -27,11 +27,12 @@ module "network" {
 module "vm" {
   source = "./vm"
   
-  # Pass the subnet ID from the network module
   subnet_id = module.network.wireguard_subnet_id
   
-  # Pass the SSH public key from environment variable
   ssh_public_key = var.ssh_public_key
+  
+  wg_server_private_key = var.wg_server_private_key
+  wg_server_public_key  = var.wg_server_public_key
   
   # Optionally override default variables
   # resource_group_name = module.network.resource_group_name

@@ -82,3 +82,14 @@ variable "ssh_public_key_path" {
   type        = string
   default     = "~/.ssh/id_rsa.pub"
 }
+
+variable "wg_server_private_key" {
+  description = "WireGuard server private key"
+  type        = string
+  sensitive   = true
+}
+
+variable "wg_server_public_key" {
+  description = "WireGuard server public key"
+  type        = string
+}

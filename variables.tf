@@ -60,4 +60,15 @@ variable "tags" {
     environment = "production"
     purpose     = "wireguard-vps"
   }
+}
+
+variable "wg_server_private_key" {
+  description = "WireGuard server private key"
+  type        = string
+  sensitive   = true
+}
+
+variable "wg_server_public_key" {
+  description = "WireGuard server public key"
+  type        = string
 } 
