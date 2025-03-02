@@ -75,4 +75,10 @@ variable "tags" {
     environment = "production"
     purpose     = "wireguard-vps"
   }
-} 
+}
+
+variable "ssh_public_key_path" {
+  description = "Path to the public SSH key to be used for authentication"
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
+}

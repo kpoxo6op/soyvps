@@ -16,7 +16,7 @@
 
 ## WireGuard Server Configuration
 
-- [ ] Install WireGuard on Azure VM using Terraform provisioners
+- [x] Install WireGuard on Azure VM using Terraform provisioners
   > Sets up VPN server software on our public endpoint
 
 - [ ] Generate WireGuard server keys

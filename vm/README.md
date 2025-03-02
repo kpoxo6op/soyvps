@@ -28,7 +28,8 @@ graph TD
 
 ## Design Considerations
 
-- **VM Size**: Standard_B1s balances cost and performance for WireGuard workloads
+- **VM Size**: Standard_B1s balances cost and performance for WireGuard
+  workloads
 - **OS**: Ubuntu 22.04 LTS provides kernel-level WireGuard support
 - **Security**:
   - SSH key authentication with no password access
@@ -98,3 +99,32 @@ Alternatively, use the pre-formatted SSH command from the outputs:
 # Get the SSH command with the correct username and IP
 $(terraform output -raw ssh_command)
 ```
+
+## VM Recreation and SSH Host Keys
+
+When the VM is recreated through Terraform (due to config changes or manual
+destroy/apply), the SSH host keys will be regenerated. This causes SSH client
+verification failures with messages like:
+
+```
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+```
+
+### Handling Host Key Changes
+
+To fix this SSH host key verification error:
+
+1. Remove the old host key for the IP address:
+
+   ```bash
+   # Get the VM's IP address and remove it from known_hosts
+   ssh-keygen -f ~/.ssh/known_hosts -R $(terraform output -raw vm_public_ip)
+   ```
+
+2. After removing the old key, SSH will prompt to accept the new host key on the
+   next connection attempt.
+
+This is expected behavior for ephemeral infrastructure and not a security issue
+when the VM is intentionally recreated as part of infrastructure management.

@@ -1,0 +1,64 @@
+---
+description: SoyVPS Documentation Style Guide
+globs: *.md
+alwaysApply: false
+---
+ ---
+description: SoyVPS Documentation Style Guide
+globs: "**/*.md"
+alwaysApply: true
+---
+
+# Documentation Style Guide
+
+This rule defines the documentation style for all markdown files in the SoyVPS project.
+
+## Core Principles
+
+1. **Use Declarative Language**
+   - All documentation must use declarative language
+   - Never use second-person pronouns ("you", "your", etc.)
+   - Never use first-person pronouns ("I", "we", "our", etc.)
+   - Use passive voice or refer to "users", "developers", or specific roles
+
+2. **Be Concise and Clear**
+   - Write concise documentation explaining WHY something exists
+   - Explain non-standard decisions and workarounds
+   - Focus on rationale, not just describing what code does
+
+3. **Task-Oriented Format**
+   - Present information in a task-oriented format
+   - Use numbered steps for procedures
+   - Begin instructions with imperative verbs (Configure, Install, Create)
+
+## Examples
+
+### Incorrect (Using "You")
+```markdown
+You should run this command to fix the issue. When you see the error message, you need to restart the service.
+```
+
+### Correct (Declarative)
+```markdown
+Running this command resolves the issue. When the error message appears, restarting the service is necessary.
+```
+
+### Incorrect (First-person)
+```markdown
+We recommend setting up SSL certificates. Our experience shows this improves security.
+```
+
+### Correct (Declarative)
+```markdown
+Setting up SSL certificates is recommended. This practice improves security.
+```
+
+## Document Structure
+
+- Each README should begin with a brief overview
+- Include architecture diagrams when appropriate
+- Document design decisions and trade-offs
+- Provide clear examples for common operations
+- Always add relative paths as top comments when referencing files
+
+This guidance helps maintain consistent, professional, and clear documentation throughout the project.

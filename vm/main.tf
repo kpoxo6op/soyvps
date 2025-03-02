@@ -4,8 +4,10 @@ resource "azurerm_public_ip" "wireguard_public_ip" {
   name                = "${var.vm_name}-ip"
   resource_group_name = var.resource_group_name
   location            = var.location
-  allocation_method   = "Static"  # Static to ensure the IP doesn't change on VM restart
-  sku                 = "Standard"  # Standard SKU is required for availability zones
+  # Static to ensure the IP doesn't change on VM restart
+  allocation_method   = "Static"
+  # Standard SKU is required for availability zones
+  sku                 = "Standard"
   
   tags = var.tags
 }
@@ -37,7 +39,7 @@ resource "azurerm_linux_virtual_machine" "wireguard_vm" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = var.ssh_public_key
+    public_key = file(var.ssh_public_key_path)
   }
 
   os_disk {
@@ -57,20 +59,28 @@ resource "azurerm_linux_virtual_machine" "wireguard_vm" {
     type = "SystemAssigned"
   }
   
+  # This cloud-init script prepares the VM for WireGuard by installing pinned
+  # package versions for stability, enabling IP forwarding required for VPN 
+  # traffic routing, and applying basic security hardening to reduce the 
+  # attack surface of the public-facing VPS
   custom_data = base64encode(<<-EOF
     #!/bin/bash
-    # Update and install basic utilities
     apt-get update
     apt-get upgrade -y
     apt-get install -y curl wget htop net-tools
     
-    # Set hostname
+    apt-get install -y wireguard=1.0.20210914-1ubuntu2 wireguard-tools=1.0.20210914-1ubuntu2
+    
+    echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+    sysctl -p
+    
+    mkdir -p /etc/wireguard
+    chmod 700 /etc/wireguard
+    
     hostnamectl set-hostname wireguard-vps
     
-    # Add to /etc/hosts
     echo "127.0.0.1 wireguard-vps" >> /etc/hosts
     
-    # Basic hardening
     sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
     systemctl restart sshd

@@ -3,27 +3,24 @@ description: This repo is to manage VPS for wireguard access to home k8s cluster
 globs: 
 alwaysApply: true
 ---
+---
+description: This repo is to manage VPS for wireguard access to home k8s cluster via terraform in Azure New Zealand North region
+globs: 
+alwaysApply: true
+---
 
 # About
 
-This repo is to manage VPS for wireguard access to home k8s cluster m in Azure
-New Zealand North region.
+This repository manages a VPS for WireGuard access to a home Kubernetes cluster in Azure New Zealand North region.
 
 ## Project Rules
 
-Most important rule
+- Find elegant solutions by re-using existing code if possible. When not possible, create simple solutions with minimal code.
 
-- find elegant solution by re-using existing code if possible, and if
-  not, then do not create a complicated solutions, keep it simple with minimum
-  amount of code
+- Follow GitOps approach with Terraform. Use Azure CLI commands only as a fallback when necessary.
 
-- strictly follow gitops approach with fallback to CLI commands in worst case. Use terrarorm and azure CLI as fallback
+- Create concise README files in each folder explaining the purpose and design decisions. Focus on why something exists, not just describing what it is.
 
-- Write very concise README.md in each folder explaining why something exists.
-  Aim to help developer to undertand what and why, dont just bluntly describe.
-  Explain non standard decisions and hacks made as en example
+- Add the relative path as a top comment in each file.
 
-
-- Always add relative path as the top comment to each path
-
-- Never comment your code unless I ask to do saw. As last resource put the single big block comment on top of the code block
+- Keep code uncommented by default. When comments are necessary, use a single block comment at the top of the code section.
