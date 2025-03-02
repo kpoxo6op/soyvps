@@ -48,6 +48,11 @@ variable "wireguard_port" {
   default     = 51820
 }
 
+variable "ssh_public_key" {
+  description = "SSH public key content for VM authentication"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

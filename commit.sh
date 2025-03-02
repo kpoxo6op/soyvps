@@ -1,10 +1,11 @@
 #!/bin/bash
 
 git add .
-git commit -m "feat(network): Complete Azure network infrastructure in Terraform
-- Created virtual network and subnet for WireGuard VPS
-- Configured network security group with rules for WireGuard and SSH
-- Implemented modular Terraform structure for network components
-- Added architectural diagrams for network visualization
-- Verified infrastructure using Azure CLI commands"
+git commit -m "fix(vm): Fix SSH public key configuration and variable setup
+
+- Fixed environment variable structure for SSH key
+- Added ssh_public_key variable at root module level
+- Removed tls_public_key_path references from outputs
+- Successfully validated VM creation with terraform plan
+- Simplified SSH key configuration for better usability"
 git push origin main 

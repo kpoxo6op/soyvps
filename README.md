@@ -57,6 +57,23 @@ export ARM_CLIENT_ID=client-id-value
 export ARM_CLIENT_SECRET=client-secret-value
 export ARM_SUBSCRIPTION_ID=subscription-id-value
 export ARM_TENANT_ID=tenant-id-value
+
+# SSH public key for VM authentication
+export TF_VAR_ssh_public_key="ssh-rsa YOUR_SSH_PUBLIC_KEY_HERE user@example"
+```
+
+Before running Terraform commands, source your environment variables:
+
+```bash
+source .env
+terraform init
+terraform plan
+```
+
+To verify your SSH key is set correctly:
+
+```bash
+echo $TF_VAR_ssh_public_key | grep -q "ssh-rsa" && echo "SSH key is set" || echo "SSH key is NOT set"
 ```
 
 ## State Management
