@@ -19,7 +19,7 @@
 - [x] Install WireGuard on Azure VM using Terraform provisioners
   > Sets up VPN server software on our public endpoint
 
-- [ ] Generate WireGuard server keys
+- [⏳] Generate WireGuard server keys
   > Creates cryptographic identity for the WireGuard server
 
 - [ ] Configure WireGuard server interface and firewall rules
@@ -38,7 +38,6 @@
 
 - [ ] Configure iptables for proper NAT and forwarding
   > Enables traffic to move between internet and VPN tunnel
-
 
 ## GitHub Actions Pipeline
 
