@@ -132,3 +132,48 @@ ping 10.8.0.1
 You have successfully generated a test client config, added it to the server, and connected via QR code on your mobile device. You can reuse or discard these keys as needed.
 
 That's it — you now have a minimal, working WireGuard setup with a quick QR-based mobile config.
+
+---
+
+## 7) Verification Results
+
+The following test results confirm successful implementation of the WireGuard VPN connection from a mobile device using Termux:
+
+### Ping Test Results
+
+```
+~ $ ping 10.8.0.1
+PING 10.8.0.1 (10.8.0.1) 56(84) bytes of data.
+64 bytes from 10.8.0.1: icmp_seq=1 ttl=64 time=149 ms
+64 bytes from 10.8.0.1: icmp_seq=2 ttl=64 time=171 ms
+64 bytes from 10.8.0.1: icmp_seq=3 ttl=64 time=91.9 ms
+[...]
+--- 10.8.0.1 ping statistics ---
+26 packets transmitted, 26 received, 0% packet loss, time 25042ms
+rtt min/avg/max/mdev = 89.237/177.087/516.672/85.957 ms
+```
+
+### IP Address Verification
+
+```
+~ $ curl ifconfig.me
+172.204.93.61
+```
+
+### Route Tracing
+
+```
+~ $ traceroute 1.1.1.1
+traceroute to 1.1.1.1 (1.1.1.1), 30 hops max, 60 byte packets
+ 1  10.8.0.1 (10.8.0.1)  120.550 ms  120.307 ms  120.051 ms
+ 2  * * *
+[...]
+```
+
+The test results demonstrate:
+
+- Successful ping to the WireGuard server interface (10.8.0.1) with 0% packet loss
+- Confirmation that traffic is routing through the VPN server (172.204.93.61)
+- Traceroute showing the first hop is through the WireGuard tunnel
+
+These results verify that the WireGuard VPN is correctly configured and functioning as expected.

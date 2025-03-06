@@ -16,10 +16,11 @@ endif
 
 help:
 	@echo "Available commands:"
-	@echo "  help       - Show this help message"
-	@echo "  ssh        - SSH to the Azure VM (automatically handles SSH host key conflicts)"
-	@echo "  apply      - Run terraform init and apply with auto-approval"
-	@echo "  plan       - Run terraform plan"
+	@echo "  help                           - Show this help message"
+	@echo "  login                          - Login to Azure"
+	@echo "  ssh                            - SSH to the Azure VM (automatically handles SSH host key conflicts)"
+	@echo "  apply                          - Run terraform init and apply with auto-approval"
+	@echo "  plan                           - Run terraform plan"
 
 ssh:
 	@echo "Finding VM IP address..."
@@ -48,4 +49,7 @@ plan:
 
 apply:
 	terraform init
-	terraform apply -auto-approve 
+	terraform apply -auto-approve
+
+login:
+	az login --use-device-code

@@ -28,7 +28,7 @@
 - [x] Configure WireGuard to start automatically
   > Ensures VPN server runs persistently, including after reboots
 
-- [ ] Create most basic setup to verify access
+- [x] Create most basic setup to verify access
   > Adds minimal client configuration to test VPN connectivity works
 
 - [ ] Create peer configuration for home Kubernetes node
