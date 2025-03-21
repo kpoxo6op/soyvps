@@ -61,12 +61,17 @@ resource "azurerm_linux_virtual_machine" "wireguard_vm" {
   
   # This cloud-init script configures the WireGuard VPN server with proper security measures.
   # It implements:
-  # - System package installation and security hardening
+  # - System package installation and security hardening (UFW firewall, SSH hardening)
   # - WireGuard interface configuration with private network (10.8.0.0/24)
-  # - Secure key management with appropriate permissions
-  # - IP forwarding for VPN traffic routing
-  # - Firewall rules to allow VPN traffic and protect the server
-  # - Automatic service activation for persistent operation
+  # - Secure key management with appropriate file permissions and group ownership
+  # - IP forwarding and NAT configuration for VPN traffic routing
+  # - UFW firewall rules to:
+  #   - Allow WireGuard VPN traffic (UDP 51820)
+  #   - Allow DNS traffic from VPN clients (10.8.0.0/24) to Pihole (192.168.1.122)
+  #   - Protect the server from unauthorized access
+  # - Automatic WireGuard service activation and persistence
+  # - Client configuration generation with Pihole DNS settings
+  # - QR code generation for easy mobile client setup
   custom_data = base64encode(<<-EOF
 #!/bin/bash
 
@@ -118,6 +123,8 @@ ufw default allow outgoing
 
 ufw allow 22/tcp
 ufw allow 51820/udp
+ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto udp
+ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto tcp
 
 ufw --force enable
 
@@ -134,7 +141,7 @@ cat > $CLIENT_HOME/client.conf << CLIENT_EOF
 [Interface]
 Address = 10.8.0.2/24
 PrivateKey = $(cat client.key)
-DNS = 1.1.1.1
+DNS = 192.168.1.122
 
 [Peer]
 PublicKey = ${var.wg_server_public_key}
@@ -148,7 +155,7 @@ cat >> /etc/wireguard/wg0.conf << PEER_EOF
 # Simple test client
 [Peer]
 PublicKey = $(cat client.pub)
-AllowedIPs = 10.8.0.2/32
+AllowedIPs = 10.8.0.2/32, 192.168.1.0/24
 PEER_EOF
 
 systemctl restart wg-quick@wg0
