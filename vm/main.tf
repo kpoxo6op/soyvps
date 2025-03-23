@@ -1,209 +1,387 @@
-# ./vm/main.tf - Azure VM resources for WireGuard
+########################################
+# This Terraform configuration deploys:
+#
+# 1) A Resource Group, Virtual Network, Subnet, and Network Security Group (NSG).
+#    - The NSG opens inbound SSH (TCP/22) from anywhere and WireGuard (UDP/51820).
+#    - The NSG is associated with the subnet so traffic can reach the VM.
+#
+# 2) A VM running Ubuntu on Azure.
+#    - It uses an SSH public key for admin login (azureuser).
+#    - The VM is assigned a public IP so you can SSH from your home PC.
+#
+# 3) Cloud-init (custom_data) bootstraps WireGuard on the VM:
+#    - Generates server & client keypairs (in Terraform) and writes them to the VM.
+#    - Enables IPv4 forwarding and sets up NAT (masquerade) on the VM's primary interface.
+#    - Configures UFW to:
+#         * Allow SSH (22/tcp).
+#         * Allow WireGuard (51820/udp).
+#         * Allow VPN clients (10.8.0.0/24) to access DNS on 192.168.1.122 (both tcp/udp 53).
+#         * Allow forwarding so VPN clients can reach the internet and your home Pi-hole.
+#    - Creates /etc/wireguard/wg0.conf with server IP 10.8.0.1/24.
+#    - Creates a test client configuration with AllowedIPs=0.0.0.0/0 and DNS=192.168.1.122,
+#      so mobile traffic goes through the VPN and uses your home cluster DNS (.122).
+#
+# 4) When complete:
+#    - You can SSH to the VM public IP (port 22).
+#    - You can install the WG client config on your phone and connect:
+#         * The phone’s public traffic goes out via the VPS (full tunnel).
+#         * DNS to your home cluster at 192.168.1.122.
+#    - The VM will forward and NAT traffic from wg0 to the internet or your local services.
+########################################
+
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.61.0"  # or any version you trust
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+}
+
+########################################################
+#  Variables
+########################################################
+
+variable "location" {
+  type    = string
+  default = "eastus"
+}
+
+variable "resource_group_name" {
+  type    = string
+  default = "soyvps-rg"
+}
+
+variable "vnet_name" {
+  type    = string
+  default = "soyvps-vnet"
+}
+
+variable "subnet_name" {
+  type    = string
+  default = "wireguard-subnet"
+}
+
+variable "nsg_name" {
+  type    = string
+  default = "wireguard-nsg"
+}
+
+variable "vnet_address_space" {
+  type    = list(string)
+  default = ["10.0.0.0/16"]
+}
+
+variable "subnet_address_prefix" {
+  type    = list(string)
+  default = ["10.0.1.0/24"]
+}
+
+variable "wireguard_port" {
+  type    = number
+  default = 51820
+}
+
+variable "vm_size" {
+  type    = string
+  default = "Standard_B1s"
+}
+
+variable "admin_public_ssh_key" {
+  type    = string
+  # Replace this with your real SSH public key. This is just an example key.
+  default = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9fB7tQJwN+Yq+zZQ3EXAMPLEz4EG8u azureuser@example"
+}
+
+########################################################
+#  Generate WireGuard Keypairs for Server & Client
+########################################################
+
+resource "tls_private_key" "wg_server" {
+  algorithm = "ed25519"
+}
+
+resource "tls_private_key" "wg_client" {
+  algorithm = "ed25519"
+}
+
+########################################################
+#  Resource Group, VNet, Subnet, NSG
+########################################################
+
+resource "azurerm_resource_group" "soyvps_rg" {
+  name     = var.resource_group_name
+  location = var.location
+}
+
+resource "azurerm_virtual_network" "soyvps_vnet" {
+  name                = var.vnet_name
+  resource_group_name = azurerm_resource_group.soyvps_rg.name
+  location            = azurerm_resource_group.soyvps_rg.location
+  address_space       = var.vnet_address_space
+}
+
+resource "azurerm_subnet" "wireguard_subnet" {
+  name                 = var.subnet_name
+  resource_group_name  = azurerm_resource_group.soyvps_rg.name
+  virtual_network_name = azurerm_virtual_network.soyvps_vnet.name
+  address_prefixes     = var.subnet_address_prefix
+}
+
+resource "azurerm_network_security_group" "wireguard_nsg" {
+  name                = var.nsg_name
+  location            = azurerm_resource_group.soyvps_rg.location
+  resource_group_name = azurerm_resource_group.soyvps_rg.name
+}
+
+resource "azurerm_network_security_rule" "allow_wireguard" {
+  name                        = "AllowWireGuard"
+  priority                    = 1000
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Udp"
+  source_port_range           = "*"
+  destination_port_range      = var.wireguard_port
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  network_security_group_name = azurerm_network_security_group.wireguard_nsg.name
+  resource_group_name         = azurerm_resource_group.soyvps_rg.name
+}
+
+resource "azurerm_network_security_rule" "allow_ssh" {
+  name                        = "AllowSSH"
+  priority                    = 1001
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  network_security_group_name = azurerm_network_security_group.wireguard_nsg.name
+  resource_group_name         = azurerm_resource_group.soyvps_rg.name
+}
+
+resource "azurerm_subnet_network_security_group_association" "wireguard_subnet_nsg_assoc" {
+  subnet_id                 = azurerm_subnet.wireguard_subnet.id
+  network_security_group_id = azurerm_network_security_group.wireguard_nsg.id
+}
+
+########################################################
+#  Public IP + Network Interface
+########################################################
 
 resource "azurerm_public_ip" "wireguard_public_ip" {
-  name                = "${var.vm_name}-ip"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  # Static to ensure the IP doesn't change on VM restart
+  name                = "wireguard-vm-ip"
+  resource_group_name = azurerm_resource_group.soyvps_rg.name
+  location            = azurerm_resource_group.soyvps_rg.location
   allocation_method   = "Static"
-  # Standard SKU is required for availability zones
-  sku                 = "Standard"
-  
-  tags = var.tags
+  sku                 = "Basic"
 }
 
 resource "azurerm_network_interface" "wireguard_nic" {
-  name                = "${var.vm_name}-nic"
-  resource_group_name = var.resource_group_name
-  location            = var.location
+  name                = "wireguard-vm-nic"
+  resource_group_name = azurerm_resource_group.soyvps_rg.name
+  location            = azurerm_resource_group.soyvps_rg.location
 
   ip_configuration {
-    name                          = "internal"
-    subnet_id                     = var.subnet_id
+    name                          = "ipconfig1"
+    subnet_id                     = azurerm_subnet.wireguard_subnet.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.wireguard_public_ip.id
   }
-  
-  tags = var.tags
 }
 
+########################################################
+#  Linux VM with Cloud-init for WireGuard
+########################################################
+
 resource "azurerm_linux_virtual_machine" "wireguard_vm" {
-  name                = var.vm_name
-  resource_group_name = var.resource_group_name
-  location            = var.location
+  name                = "wireguard-vm"
+  resource_group_name = azurerm_resource_group.soyvps_rg.name
+  location            = azurerm_resource_group.soyvps_rg.location
   size                = var.vm_size
-  admin_username      = var.admin_username
-  network_interface_ids = [
-    azurerm_network_interface.wireguard_nic.id,
-  ]
+  admin_username      = "azureuser"
 
   admin_ssh_key {
-    username   = var.admin_username
-    public_key = file(var.ssh_public_key_path)
+    username       = "azureuser"
+    public_key     = var.admin_public_ssh_key
   }
+
+  network_interface_ids = [
+    azurerm_network_interface.wireguard_nic.id
+  ]
 
   os_disk {
     caching              = "ReadWrite"
-    storage_account_type = var.os_disk_type
-    disk_size_gb         = var.os_disk_size_gb
+    storage_account_type = "Standard_LRS"
   }
 
   source_image_reference {
-    publisher = var.ubuntu_version.publisher
-    offer     = var.ubuntu_version.offer
-    sku       = var.ubuntu_version.sku
-    version   = var.ubuntu_version.version
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
+    version   = "latest"
   }
 
-  identity {
-    type = "SystemAssigned"
-  }
-  
-  # This cloud-init script configures the WireGuard VPN server with proper security measures.
-  # It implements:
-  # - System package installation and security hardening (UFW firewall, SSH hardening)
-  # - WireGuard interface configuration with private network (10.8.0.0/24)
-  # - Secure key management with appropriate file permissions and group ownership
-  # - IP forwarding and NAT configuration for VPN traffic routing
-  # - UFW firewall rules to:
-  #   - Allow WireGuard VPN traffic (UDP 51820)
-  #   - Allow DNS traffic from VPN clients (10.8.0.0/24) to Pihole (192.168.1.122)
-  #   - Protect the server from unauthorized access
-  # - Automatic WireGuard service activation and persistence
-  # - Client configuration generation with Pihole DNS settings
-  # - QR code generation for easy mobile client setup
-  custom_data = base64encode(<<-EOF
-#!/bin/bash
+  custom_data = base64encode(
+    <<-EOF
+      #!/usr/bin/env bash
 
-apt-get update
-apt-get upgrade -y
-apt-get install -y curl wget htop net-tools 
-apt-get install -y wireguard wireguard-tools qrencode
+      # Update packages
+      apt-get update -y
+      apt-get install -y wireguard qrencode ufw
 
-hostnamectl set-hostname wireguard-vps
-echo "127.0.0.1 wireguard-vps" >> /etc/hosts
+      # Enable IP forwarding
+      echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+      sysctl -w net.ipv4.ip_forward=1
 
-sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-systemctl restart sshd
+      # Detect primary network interface for NAT
+      PRIMARY_IF=$(ip route get 8.8.8.8 | grep -oP '(?<=dev )\\S+')
 
-groupadd -f wireguard
-usermod -aG wireguard ${var.admin_username}
+      # Set up NAT (masquerade) so VPN clients can reach the Internet / local network
+      iptables -t nat -A POSTROUTING -o $PRIMARY_IF -j MASQUERADE
+      # Make it persist across reboots
+      apt-get install -y iptables-persistent
+      netfilter-persistent save
+      netfilter-persistent reload
 
-mkdir -p /etc/wireguard
-chgrp wireguard /etc/wireguard
-chmod 750 /etc/wireguard
+      # Create WireGuard server keys
+      mkdir -p /etc/wireguard
+      echo "${tls_private_key.wg_server.private_key_pem}" > /etc/wireguard/server.key
+      chmod 600 /etc/wireguard/server.key
+      echo "${tls_private_key.wg_server.public_key_openssh}" > /etc/wireguard/server.pub
+      chmod 644 /etc/wireguard/server.pub
 
-echo "${var.wg_server_private_key}" > /etc/wireguard/server_private.key
-chmod 600 /etc/wireguard/server_private.key
+      # Create WireGuard client keys (test client)
+      echo "${tls_private_key.wg_client.private_key_pem}" > /etc/wireguard/client.key
+      chmod 600 /etc/wireguard/client.key
+      echo "${tls_private_key.wg_client.public_key_openssh}" > /etc/wireguard/client.pub
+      chmod 644 /etc/wireguard/client.pub
 
-echo "${var.wg_server_public_key}" > /etc/wireguard/server_public.key
-chgrp wireguard /etc/wireguard/server_public.key
-chmod 644 /etc/wireguard/server_public.key
-
-cat > /etc/wireguard/wg0.conf << WGEOF
+      # WireGuard interface config for the server
+      cat <<WG_CONF > /etc/wireguard/wg0.conf
 [Interface]
-PrivateKey = ${var.wg_server_private_key}
 Address = 10.8.0.1/24
-ListenPort = 51820
+SaveConfig = false
+ListenPort = ${var.wireguard_port}
+PrivateKey = \$(cat /etc/wireguard/server.key)
+PostUp   = ufw allow in on wg0
+PostDown = ufw delete allow in on wg0
+WG_CONF
 
-PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
-WGEOF
+      # Bring up wg0
+      systemctl enable wg-quick@wg0
+      systemctl start wg-quick@wg0
 
-chmod 600 /etc/wireguard/wg0.conf
+      # Configure UFW firewall
+      ufw default deny incoming
+      ufw default allow outgoing
 
-echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-wireguard.conf
-sysctl -p /etc/sysctl.d/99-wireguard.conf
+      # Allow SSH and WireGuard ports
+      ufw allow 22/tcp
+      ufw allow ${var.wireguard_port}/udp
 
-apt-get install -y ufw
+      # Allow DNS to your home cluster Pi-hole at 192.168.1.122 from VPN clients
+      ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto udp
+      ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto tcp
 
-ufw default deny incoming
-ufw default allow outgoing
+      # Allow forwarding so VPN clients can reach local network and internet
+      ufw allow forward
 
-ufw allow 22/tcp
-ufw allow 51820/udp
+      # Enable UFW
+      ufw --force enable
 
-ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto udp
-ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto tcp
+      # Append the test client as a peer on the server
+      cat >> /etc/wireguard/wg0.conf <<PEER_EOF
 
-ufw allow forward
+[Peer]
+PublicKey = \$(cat /etc/wireguard/client.pub)
+AllowedIPs = 10.8.0.2/32
+PEER_EOF
 
-ufw --force enable
+      # Restart WG to load the peer
+      systemctl restart wg-quick@wg0
 
-systemctl enable wg-quick@wg0
-systemctl start wg-quick@wg0
-
-# Setup for client configuration and QR code generation
-CLIENT_HOME="/home/${var.admin_username}"
-cd $CLIENT_HOME
-umask 077
-wg genkey | tee client.key | wg pubkey > client.pub
-
-cat > $CLIENT_HOME/client.conf << CLIENT_EOF
+      # Generate a sample client config
+      cat <<CLIENT_EOF > /etc/wireguard/client.conf
 [Interface]
 Address = 10.8.0.2/24
-PrivateKey = $(cat client.key)
+PrivateKey = \$(cat /etc/wireguard/client.key)
 DNS = 192.168.1.122
 
 [Peer]
-PublicKey = ${var.wg_server_public_key}
-Endpoint = $(curl -s ifconfig.me):51820
+PublicKey = \$(cat /etc/wireguard/server.pub)
+Endpoint = \$(curl -s ifconfig.co):${var.wireguard_port}
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 CLIENT_EOF
 
-cat >> /etc/wireguard/wg0.conf << PEER_EOF
+      # Show the client config QR code on console (for quick phone config)
+      echo "Client config file: /etc/wireguard/client.conf"
+      qrencode -t ansiutf8 < /etc/wireguard/client.conf
 
-# Simple test client
-[Peer]
-PublicKey = $(cat client.pub)
-AllowedIPs = 0.0.0.0/0
-PEER_EOF
-
-systemctl restart wg-quick@wg0
-
-cat > $CLIENT_HOME/show-qr.sh << SCRIPT_EOF
-#!/bin/bash
-echo "===================== WIREGUARD QR CODE ======================"
-qrencode -t ansiutf8 < $CLIENT_HOME/client.conf
-echo "=============================================================="
-echo
-echo "Scan this QR code with your WireGuard mobile app to connect."
-echo "Your client configuration is saved at $CLIENT_HOME/client.conf"
-SCRIPT_EOF
-
-chmod +x $CLIENT_HOME/show-qr.sh
-chown ${var.admin_username}:${var.admin_username} $CLIENT_HOME/client.key $CLIENT_HOME/client.pub $CLIENT_HOME/client.conf $CLIENT_HOME/show-qr.sh
-
-cat > $CLIENT_HOME/WIREGUARD-README.txt << README_EOF
-=================================================================
-WIREGUARD VPN SETUP COMPLETE
-=================================================================
-
-Your WireGuard VPN server is configured and ready to use.
-A client configuration has been automatically created for you.
-
-To display the QR code for mobile app connection:
-  $ ./show-qr.sh
-
-Simply scan this QR code with the WireGuard mobile app to connect.
-
-To test connectivity after connecting:
-  1. Confirm the status in the WireGuard app shows "Connected"
-  2. Try pinging the server's VPN interface: ping 10.8.0.1
-  3. If you see successful replies, your WireGuard tunnel is working
-
-Enjoy your secure VPN connection!
-=================================================================
-README_EOF
-
-chown ${var.admin_username}:${var.admin_username} $CLIENT_HOME/WIREGUARD-README.txt
-
-echo "WireGuard client QR code has been generated."
-echo "SSH to the server and run: ./show-qr.sh"
-EOF
+      # Done
+      echo "WireGuard setup complete."
+    EOF
   )
-  
-  tags = var.tags
+
+  tags = {
+    environment = "production"
+    purpose     = "wireguard-vps"
+  }
+}
+
+########################################################
+#  Outputs
+########################################################
+
+output "vm_public_ip" {
+  description = "Public IP of the WireGuard VM"
+  value       = azurerm_public_ip.wireguard_public_ip.ip_address
+}
+
+output "ssh_command" {
+  description = "SSH command to connect to the VM"
+  value       = "ssh azureuser@${azurerm_public_ip.wireguard_public_ip.ip_address}"
+}
+
+output "resource_group_name" {
+  description = "Name of the resource group"
+  value       = azurerm_resource_group.soyvps_rg.name
+}
+
+output "subnet_id" {
+  description = "ID of the WireGuard subnet"
+  value       = azurerm_subnet.wireguard_subnet.id
+}
+
+output "server_private_key" {
+  description = "Server private key (for reference). Do NOT store in version control!"
+  value       = tls_private_key.wg_server.private_key_pem
+  sensitive   = true
+}
+
+output "server_public_key" {
+  description = "Server public key"
+  value       = tls_private_key.wg_server.public_key_openssh
+}
+
+output "client_private_key" {
+  description = "Client private key (for reference). Do NOT store in version control!"
+  value       = tls_private_key.wg_client.private_key_pem
+  sensitive   = true
+}
+
+output "client_public_key" {
+  description = "Client public key"
+  value       = tls_private_key.wg_client.public_key_openssh
 }
