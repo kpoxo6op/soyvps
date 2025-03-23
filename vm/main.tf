@@ -123,8 +123,11 @@ ufw default allow outgoing
 
 ufw allow 22/tcp
 ufw allow 51820/udp
+
 ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto udp
 ufw allow in on wg0 from 10.8.0.0/24 to 192.168.1.122 port 53 proto tcp
+
+ufw allow forward
 
 ufw --force enable
 
@@ -155,7 +158,7 @@ cat >> /etc/wireguard/wg0.conf << PEER_EOF
 # Simple test client
 [Peer]
 PublicKey = $(cat client.pub)
-AllowedIPs = 10.8.0.2/32, 192.168.1.0/24
+AllowedIPs = 0.0.0.0/0
 PEER_EOF
 
 systemctl restart wg-quick@wg0
