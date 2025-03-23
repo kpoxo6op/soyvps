@@ -1,95 +1,104 @@
-# ./vm/variables.tf - Variables for WireGuard VM configuration
+# /vm/variables.tf
+#
+# EXPLANATION OF THIS FILE:
+# 1) Holds input variables specifically for the VM module (WireGuard VM).
+# 2) References them in vm/main.tf (like resource_group_name, subnet_id, etc.).
+# 3) If you already have some in the root-level variables, you can pass them in from main.tf.
+#
 
 variable "resource_group_name" {
-  description = "Name of the resource group for WireGuard VPS"
   type        = string
+  description = "Name of the existing resource group for this VM"
   default     = "soyvps-rg"
 }
 
 variable "location" {
-  description = "The Azure region where resources will be created"
   type        = string
+  description = "Azure location"
   default     = "newzealandnorth"
 }
 
 variable "vm_name" {
-  description = "Name of the WireGuard VM"
   type        = string
+  description = "Name of the WireGuard VM"
   default     = "wireguard-vm"
 }
 
 variable "vm_size" {
-  description = "Size of the VM"
   type        = string
-  default     = "Standard_B1s"  # Budget-friendly size sufficient for WireGuard
+  description = "Azure VM size"
+  default     = "Standard_B1s"
 }
 
 variable "admin_username" {
-  description = "Username for the VM admin user"
   type        = string
+  description = "Admin username for the VM"
   default     = "azureuser"
 }
 
-variable "subnet_id" {
-  description = "ID of the subnet where the VM will be deployed"
+variable "ssh_public_key" {
   type        = string
+  description = "SSH public key to allow for login"
+  default     = ""
+}
+
+variable "subnet_id" {
+  type        = string
+  description = "Subnet ID where the WireGuard VM NIC will be attached"
+}
+
+variable "wireguard_port" {
+  type        = number
+  description = "UDP port for WireGuard"
+  default     = 51820
+}
+
+variable "os_disk_size_gb" {
+  type        = number
+  description = "OS disk size in GB"
+  default     = 30
+}
+
+variable "os_disk_type" {
+  type        = string
+  description = "OS disk SKU type"
+  default     = "Standard_LRS"
 }
 
 variable "ubuntu_version" {
-  description = "Version of Ubuntu to use"
   type = object({
     publisher = string
     offer     = string
     sku       = string
     version   = string
   })
+  description = "Image reference for the Ubuntu OS"
   default = {
     publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"  # Ubuntu 22.04 LTS
-    sku       = "22_04-lts-gen2"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key content for VM authentication"
-  type        = string
-}
-
-variable "os_disk_size_gb" {
-  description = "Size of the OS disk in GB"
-  type        = number
-  default     = 30
-}
-
-variable "os_disk_type" {
-  description = "Type of OS disk storage"
-  type        = string
-  default     = "Standard_LRS"  # Standard locally redundant storage (cost-effective)
-}
-
 variable "tags" {
-  description = "Tags to apply to all resources"
   type        = map(string)
+  description = "Tags for the VM"
   default     = {
     environment = "production"
     purpose     = "wireguard-vps"
   }
 }
 
-variable "ssh_public_key_path" {
-  description = "Path to the public SSH key to be used for authentication"
-  type        = string
-  default     = "~/.ssh/id_rsa.pub"
-}
-
 variable "wg_server_private_key" {
-  description = "WireGuard server private key"
   type        = string
+  description = "Optional: Pre-generated WG server private key"
   sensitive   = true
+  default     = ""
 }
 
 variable "wg_server_public_key" {
-  description = "WireGuard server public key"
   type        = string
+  description = "Optional: Pre-generated WG server public key"
+  default     = ""
 }
