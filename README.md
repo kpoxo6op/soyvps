@@ -13,6 +13,13 @@ A project to manage VPS for Wireguard access to home Kubernetes cluster via Terr
   - [RBAC Access Setup](#rbac-access-setup)
   - [Verifying State](#verifying-state)
 
+## Quick Start
+
+```bash
+source .env
+az login --service-principal --username $ARM_CLIENT_ID --password $ARM_CLIENT_SECRET --tenant $ARM_TENANT_ID
+```
+
 ## Prerequisites
 
 ```bash
