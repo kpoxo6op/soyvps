@@ -1,17 +1,44 @@
-# SoyVPS
+# SoyVPS - DECOMMISSIONED
+
+## ⚠️ ARCHIVE NOTICE
+
+**This repository has been decommissioned and archived.**
+
+**Date**: August 25, 2024  
+**Reason**: Migrated to Tailscale for VPN access to home Kubernetes cluster  
+**Status**: All Azure resources destroyed, no ongoing charges
+
+### What was cleaned up:
+- ✅ Virtual Machine (wireguard-vm) - DESTROYED
+- ✅ Resource Group (soyvps-rg) - DELETED  
+- ✅ Terraform state storage (tfstate-rg) - DELETED
+- ✅ All network resources - DESTROYED
+- ✅ Monitoring alerts - REMOVED
+
+**Final Cost**: $0.00/month (all resources removed)
+
+---
+
+## Original Purpose
 
 A project to manage VPS for Wireguard access to home Kubernetes cluster via Terraform in Azure New Zealand North region.
 
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Authentication](#authentication)
-  - [Service Principal Setup](#service-principal-setup)
-  - [Environment Variables](#environment-variables)
-- [State Management](#state-management)
-  - [Setting Up Remote State](#setting-up-remote-state)
-  - [RBAC Access Setup](#rbac-access-setup)
-  - [Verifying State](#verifying-state)
+- [SoyVPS - DECOMMISSIONED](#soyvps---decommissioned)
+  - [⚠️ ARCHIVE NOTICE](#️-archive-notice)
+    - [What was cleaned up:](#what-was-cleaned-up)
+  - [Original Purpose](#original-purpose)
+  - [Table of Contents](#table-of-contents)
+  - [Quick Start](#quick-start)
+  - [Prerequisites](#prerequisites)
+  - [Authentication](#authentication)
+    - [Service Principal Setup](#service-principal-setup)
+    - [Environment Variables](#environment-variables)
+  - [State Management](#state-management)
+    - [Setting Up Remote State](#setting-up-remote-state)
+    - [RBAC Access Setup](#rbac-access-setup)
+    - [Verifying State](#verifying-state)
 
 ## Quick Start
 
@@ -82,6 +109,8 @@ To verify your SSH key is set correctly:
 ```bash
 echo $TF_VAR_ssh_public_key | grep -q "ssh-rsa" && echo "SSH key is set" || echo "SSH key is NOT set"
 ```
+
+Generate SSH public key if missing: `ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub`
 
 ## State Management
 

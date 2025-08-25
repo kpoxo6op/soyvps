@@ -2,13 +2,14 @@
 
 git add .
 
-git commit -m "feat(wireguard): Add automated client setup with QR code generation
+git commit -m "feat(decommission): archive repository after migrating to Tailscale
 
-- Integrated client configuration generation into cloud-init script
-- Added QR code display functionality for easy mobile setup
-- Verified successful connection from mobile device with Termux
-- Simplified deployment process by automating manual steps"
+- Destroyed all Azure infrastructure (VM, networking, storage)
+- Removed Terraform state and monitoring resources  
+- Updated README with decommission notice and cleanup status
+- Final cost: $0.00/month (all resources removed)
+- Migration reason: Switched to Tailscale for VPN access"
 
 git push origin main
 
-echo "Changes have been committed and pushed to main branch"
+echo "Repository has been decommissioned and archived"
